@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>HOLD</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Teko:wght@300;400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #0a0a0f;
+    --accent: #00f5ff;
+    --danger: #ff2d55;
+    --success: #39ff14;
+    --warn: #ffbe00;
+  }
+  body {
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Teko', sans-serif;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes gridMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(40px); }
+  }
+  #game {
+    width: 100vw;
+    max-width: 420px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px 24px 60px;
+    position: relative;
+  }
+  .header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .score-block { text-align: center; }
+  .score-label {
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+  }
+  .score-value {
+    font-family: 'Black Ops One', sans-serif;
+    font-size: 48px;
+    color: white;
+    line-height: 1;
+    text-shadow: 0 0 20px var(--accent);
+    transition: transform 0.1s;
+  }
+  .score-value.pop { transform: scale(1.3); }
+  .level-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .level-text {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .level-dots { display: flex; gap: 4px; }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    transition: background 0.3s;
+  }
+  .dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .arena {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .bar-container {
+    width: 90px;
+    height: 320px;
+    position: relative;
+  }
+  .track {
+    position: absolute;
+    inset: 0;
+    border-radius: 45px;
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .zone {
+    position: absolute;
+    left: 0; right: 0;
+    border-radius: 4px;
+    background: rgba(57,255,20,0.15);
+    border-top: 2px solid var(--success);
+    border-bottom: 2px solid var(--success);
+    transition: bottom 0.3s ease, height 0.3s ease;
+  }
+  .zone::after {
+    content: '◄';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--success);
+  }
+  .fill {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    border-radius: 45px;
+    background: linear-gradient(to top, var(--accent), #7b61ff);
+    box-shadow: 0 0 30px rgba(0,245,255,0.4);
+    transition: height 0.05s linear;
+  }
+  .fill::after {
+    content: '';
+    position: absolute;
+    top: 8px; left: 8px; right: 8px;
+    height: 30%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+    border-radius: 40px;
+  }
+  .fill.danger {
+    background: linear-gradient(to top, var(--danger), #ff6b35);
+    box-shadow: 0 0 30px rgba(255,45,85,0.5);
+  }
+  .fill.perfect {
+    background: linear-gradient(to top, var(--success), #00ffaa);
+    box-shadow: 0 0 40px rgba(57,255,20,0.6);
+  }
+  .feedback {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Black Ops One', sans-serif;
+    font-size: 32px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    white-space: nowrap;
+    text-shadow: 0 0 30px currentColor;
+    transition: opacity 0.1s;
+  }
+  .feedback.show { opacity: 1; }
+  .feedback.perfect-text { color: var(--success); }
+  .feedback.close-text { color: var(--warn); }
+  .feedback.miss-text { color: var(--danger); }
+  .lives {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .heart { font-size: 20px; transition: opacity 0.3s; }
+  .heart.lost { opacity: 0.2; }
+  .instruction { text-align: center; padding: 10px 0 0; }
+  .inst-main {
+    font-family: 'Black Ops One', sans-serif;
+    font-size: 28px;
+    color: white;
+    letter-spacing: 2px;
+  }
+  .inst-sub {
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .hold-btn {
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    background: radial-gradient(circle at 40% 35%, rgba(0,245,255,0.2), rgba(0,0,0,0.6));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 0 40px rgba(0,245,255,0.2), inset 0 0 40px rgba(0,245,255,0.05);
+    transition: transform 0.1s, box-shadow 0.1s;
+    outline: none;
+  }
+  .hold-btn.pressing {
+    transform: scale(0.93);
+    box-shadow: 0 0 60px rgba(0,245,255,0.5), inset 0 0 40px rgba(0,245,255,0.15);
+  }
+  .hold-btn-label {
+    font-family: 'Black Ops One', sans-serif;
+    font-size: 22px;
+    color: white;
+    letter-spacing: 3px;
+    pointer-events: none;
+  }
+  .hold-btn-sub {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-top: 2px;
+    pointer-events: none;
+  }
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    width: 100%; height: 100%;
+    animation: rippleAnim 0.8s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes rippleAnim {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+  #gameover {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.97);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    animation: fadeIn 0.3s ease;
+  }
+  #gameover.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  .go-title {
+    font-family: 'Black Ops One', sans-serif;
+    font-size: 48px;
+    color: var(--danger);
+    text-shadow: 0 0 30px var(--danger);
+    letter-spacing: 4px;
+  }
+  .go-score {
+    font-family: 'Black Ops One', sans-serif;
+    font-size: 90px;
+    color: white;
+    line-height: 1;
+    text-shadow: 0 0 30px var(--accent);
+  }
+  .go-best { font-size: 18px; letter-spacing: 3px; color: var(--warn); text-transform: uppercase; }
+  .go-sub {
+    font-size: 15px;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+    padding: 0 40px;
+  }
+  .btn-retry {
+    margin-top: 10px;
+    padding: 16px 52px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 60px;
+    font-family: 'Black Ops One', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    box-shadow: 0 0 40px rgba(0,245,255,0.4);
+  }
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    animation: particleAnim 0.9s ease-out forwards;
+    z-index: 200;
+  }
+  @keyframes particleAnim {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  }
+  .flash {
+    position: fixed; inset: 0;
+    pointer-events: none; opacity: 0; z-index: 50;
+  }
+  .flash.green { background: var(--success); animation: flashAnim 0.3s ease-out; }
+  .flash.red { background: var(--danger); animation: flashAnim 0.3s ease-out; }
+  @keyframes flashAnim { 0% { opacity: 0.2; } 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="header">
+    <div class="score-block">
+      <div class="score-label">Score</div>
+      <div class="score-value" id="score">0</div>
+    </div>
+    <div class="level-bar">
+      <div class="level-text" id="levelText">LVL 1</div>
+      <div class="level-dots" id="dots"></div>
+      <div class="lives" id="lives"></div>
+    </div>
+    <div class="score-block">
+      <div class="score-label">Best</div>
+      <div class="score-value" id="best">0</div>
+    </div>
+  </div>
+
+  <div class="arena">
+    <div class="bar-container" id="barContainer">
+      <div class="track">
+        <div class="zone" id="zone"></div>
+        <div class="fill" id="fill"></div>
+      </div>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div class="instruction">
+    <div class="inst-main">HOLD</div>
+    <div class="inst-sub">release at the green zone</div>
+  </div>
+
+  <button class="hold-btn" id="holdBtn" aria-label="Hold button">
+    <div class="hold-btn-label">HOLD</div>
+    <div class="hold-btn-sub">& release</div>
+  </button>
+</div>
+
+<div id="gameover">
+  <div class="go-title">GAME OVER</div>
+  <div class="go-score" id="goScore">0</div>
+  <div class="go-best" id="goBest"></div>
+  <div class="go-sub">Challenge your friends 🔥</div>
+  <button class="btn-retry" id="retryBtn">RETRY</button>
+</div>
+
+<div class="flash" id="flash"></div>
+
+<script>
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let ctx;
+function initAudio() { if (!ctx) ctx = new AudioCtx(); }
+function playTone(freq, type, duration, vol, delay=0) {
+  if (!ctx) return;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.type = type;
+  o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+  g.gain.setValueAtTime(0, ctx.currentTime + delay);
+  g.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+  o.start(ctx.currentTime + delay);
+  o.stop(ctx.currentTime + delay + duration + 0.05);
+}
+function soundPerfect() {
+  playTone(523,'sine',0.12,0.4); playTone(659,'sine',0.12,0.4,0.1); playTone(784,'sine',0.2,0.5,0.2);
+}
+function soundClose() { playTone(330,'sine',0.15,0.35); playTone(392,'sine',0.15,0.35,0.1); }
+function soundMiss() { playTone(180,'sawtooth',0.08,0.3); playTone(120,'sawtooth',0.15,0.3,0.08); }
+function soundPress() { playTone(440,'sine',0.06,0.15); }
+
+let score=0, best=parseInt(localStorage.getItem('hold_best')||'0');
+let level=1, isHolding=false, fillPct=0;
+let fillSpeed=0.8, zoneTop=30, zoneHeight=22;
+let animId, alive=true, lastTime=null;
+let lives=3, consecutivePerfect=0;
+
+const fillEl=document.getElementById('fill');
+const zoneEl=document.getElementById('zone');
+const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
+const feedback=document.getElementById('feedback');
+const holdBtn=document.getElementById('holdBtn');
+const gameoverEl=document.getElementById('gameover');
+const goScoreEl=document.getElementById('goScore');
+const goBestEl=document.getElementById('goBest');
+const levelTextEl=document.getElementById('levelText');
+const flashEl=document.getElementById('flash');
+const dotsEl=document.getElementById('dots');
+const livesEl=document.getElementById('lives');
+
+bestEl.textContent=best;
+
+function buildLives() {
+  livesEl.innerHTML='';
+  for(let i=0;i<3;i++){
+    const h=document.createElement('div');
+    h.className='heart'+(i>=lives?' lost':'');
+    h.textContent='❤️';
+    livesEl.appendChild(h);
+  }
+}
+function buildDots() {
+  dotsEl.innerHTML='';
+  for(let i=0;i<5;i++){
+    const d=document.createElement('div');
+    d.className='dot'+(i<(score%5)?' active':'');
+    dotsEl.appendChild(d);
+  }
+}
+buildDots(); buildLives();
+
+function setLevel() {
+  level=Math.floor(score/5)+1;
+  zoneHeight=Math.max(7,22-level*1.6);
+  fillSpeed=0.75+level*0.22;
+  zoneTop=12+Math.random()*(72-zoneHeight);
+  levelTextEl.textContent='LVL '+level;
+  zoneEl.style.height=zoneHeight+'%';
+  zoneEl.style.bottom=(100-zoneTop-zoneHeight)+'%';
+}
+
+function setFillVisual() {
+  fillEl.style.height=fillPct+'%';
+  const barTopFromTop=100-fillPct;
+  const inZone=barTopFromTop>=zoneTop&&barTopFromTop<=(zoneTop+zoneHeight);
+  fillEl.className='fill'+(inZone?' perfect':fillPct>90?' danger':'');
+}
+
+function gameLoop(ts) {
+  if(!alive) return;
+  if(!lastTime) lastTime=ts;
+  const dt=(ts-lastTime)/16.67;
+  lastTime=ts;
+  if(isHolding) {
+    fillPct=Math.min(100,fillPct+fillSpeed*dt);
+    if(fillPct>=100){ release(true); return; }
+    setFillVisual();
+  }
+  animId=requestAnimationFrame(gameLoop);
+}
+
+function getAccuracy() {
+  const barTopFromTop=100-fillPct;
+  if(barTopFromTop>=zoneTop&&barTopFromTop<=(zoneTop+zoneHeight)) {
+    const center=zoneTop+zoneHeight/2;
+    return 1-Math.abs(barTopFromTop-center)/(zoneHeight/2);
+  }
+  const margin=5;
+  if(barTopFromTop>=(zoneTop-margin)&&barTopFromTop<=(zoneTop+zoneHeight+margin)) return -0.5;
+  return -1;
+}
+
+function showFeedback(type,text) {
+  feedback.className='feedback show '+type;
+  feedback.textContent=text;
+  setTimeout(()=>{ feedback.className='feedback'; },700);
+}
+
+function doFlash(color) {
+  flashEl.className='flash '+color;
+  setTimeout(()=>flashEl.className='flash',300);
+}
+
+function spawnParticles(color) {
+  const btn=holdBtn.getBoundingClientRect();
+  const cx=btn.left+btn.width/2, cy=btn.top+btn.height/2;
+  for(let i=0;i<12;i++) {
+    const p=document.createElement('div');
+    p.className='particle';
+    const angle=(i/12)*Math.PI*2, dist=60+Math.random()*60;
+    p.style.cssText=`left:${cx}px;top:${cy}px;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;background:${color};--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;box-shadow:0 0 8px ${color};`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),950);
+  }
+}
+
+function popScore() {
+  scoreEl.classList.add('pop');
+  setTimeout(()=>scoreEl.classList.remove('pop'),150);
+}
+
+function release(overflow=false) {
+  if(!isHolding&&!overflow) return;
+  isHolding=false;
+  handleResult(overflow?-1:getAccuracy());
+}
+
+function handleResult(acc) {
+  cancelAnimationFrame(animId);
+  lastTime=null;
+  if(acc>=0.7) {
+    consecutivePerfect++;
+    const bonus=consecutivePerfect>=3?3:1;
+    score+=bonus; scoreEl.textContent=score; popScore();
+    soundPerfect(); doFlash('green');
+    spawnParticles('#39ff14');
+    showFeedback('perfect-text', consecutivePerfect>=3?'🔥 COMBO x'+bonus:'✓ PERFECT!');
+  } else if(acc>=-0.5) {
+    consecutivePerfect=0;
+    score+=1; scoreEl.textContent=score; popScore();
+    soundClose();
+    showFeedback('close-text','CLOSE!');
+  } else {
+    consecutivePerfect=0;
+    soundMiss(); doFlash('red');
+    showFeedback('miss-text','✗ MISS');
+    lives--;
+    buildLives();
+    shakeBtn();
+    if(lives<=0){ setTimeout(gameOver,600); return; }
+  }
+  buildDots();
+  setTimeout(()=>{
+    fillPct=0; fillEl.style.height='0%'; fillEl.className='fill';
+    setLevel();
+    animId=requestAnimationFrame(gameLoop);
+  },450);
+}
+
+function shakeBtn() {
+  const frames=['-8px','8px','-5px','5px','0px'];
+  frames.forEach((x,i)=>setTimeout(()=>holdBtn.style.transform=`translateX(${x})`,i*80));
+}
+
+function gameOver() {
+  alive=false; cancelAnimationFrame(animId);
+  if(score>best){ best=score; localStorage.setItem('hold_best',best); goBestEl.textContent='🏆 NEW BEST!'; }
+  else goBestEl.textContent='Best: '+best;
+  goScoreEl.textContent=score;
+  gameoverEl.classList.add('show');
+}
+
+function startGame() {
+  score=0; lives=3; level=1; fillPct=0; isHolding=false;
+  consecutivePerfect=0; alive=true; lastTime=null; fillSpeed=0.75;
+  scoreEl.textContent=0; bestEl.textContent=best;
+  fillEl.style.height='0%'; fillEl.className='fill';
+  gameoverEl.classList.remove('show');
+  buildDots(); buildLives(); setLevel();
+  animId=requestAnimationFrame(gameLoop);
+}
+
+function onPress(e) {
+  e.preventDefault(); initAudio();
+  if(!alive||isHolding) return;
+  isHolding=true; soundPress();
+  holdBtn.classList.add('pressing');
+  const r=document.createElement('div');
+  r.className='ripple'; holdBtn.appendChild(r);
+  setTimeout(()=>r.remove(),800);
+}
+function onRelease(e) {
+  e.preventDefault();
+  if(!isHolding) return;
+  holdBtn.classList.remove('pressing');
+  release();
+}
+
+holdBtn.addEventListener('touchstart',onPress,{passive:false});
+holdBtn.addEventListener('touchend',onRelease,{passive:false});
+holdBtn.addEventListener('mousedown',onPress);
+document.addEventListener('mouseup',onRelease);
+document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+document.getElementById('retryBtn').addEventListener('click',()=>{ initAudio(); startGame(); });
+
+setLevel();
+animId=requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
