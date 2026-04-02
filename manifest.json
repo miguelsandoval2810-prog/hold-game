@@ -2,21 +2,37 @@
   "name": "HOLD — Don't Let Go",
   "short_name": "HOLD",
   "description": "Test your timing. Hold and release at the perfect moment.",
-  "start_url": "/hold-game.html",
+  "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#0a0a0f",
   "theme_color": "#00f5ff",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "https://miguelsandoval2810-prog.github.io/hold-game/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://miguelsandoval2810-prog.github.io/hold-game/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "categories": ["games", "entertainment"]
 }
+```
+
+6. Haz clic en **"Commit changes"** → **"Commit changes"** otra vez
+
+---
+
+Ahora espera **2 minutos** para que GitHub actualice los cambios.
+
+Luego regresa a **pwabuilder.com**, borra la URL que tenías y vuelve a pegar:
+```
+https://miguelsandoval2810-prog.github.io/hold-game/
