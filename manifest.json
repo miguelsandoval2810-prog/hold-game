@@ -25,14 +25,3 @@
   "screenshots": [],
   "categories": ["games", "entertainment"]
 }
-```
-
-6. Haz clic en **"Commit changes"** → **"Commit changes"** otra vez
-
----
-
-Ahora espera **2 minutos** para que GitHub actualice los cambios.
-
-Luego regresa a **pwabuilder.com**, borra la URL que tenías y vuelve a pegar:
-```
-https://miguelsandoval2810-prog.github.io/hold-game/
